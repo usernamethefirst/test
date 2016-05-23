@@ -1,0 +1,15 @@
+.axis
+{
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+}
+
+.rectSelec {
+
+    fill: #b3ffb3;
+    opacity : 0.5;
+    stroke-width : 1.5;
+    stroke: #006600;
+
+}
