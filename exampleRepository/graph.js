@@ -14,13 +14,6 @@ function drawHisto1DStack(urlJson, mysvg) {
 
     svg.yOutput = d3.scale.linear().clamp(true);
 
-    svg.y = function(e){
-        if(e>0){
-            return svg.yOutput(e);
-        }
-        return svg.yInput(e);
-    };
-
     svg.svg = svg.append("svg");
 
     //Will contain the chart itself, without the axis
@@ -73,8 +66,7 @@ function drawHisto1DStack(urlJson, mysvg) {
 
 
         //Evaluation of the abscissa domain
-        svg.x.domain([-0.375,xlength-0.375]);
-
+        svg.x.domain([-0.625,xlength-0.375]);
 
         var totalSumIn = [];
         var totalSumOut = [];
@@ -113,7 +105,6 @@ function drawHisto1DStack(urlJson, mysvg) {
 
         var totalIn = d3.max(totalSumIn);
         var totalOut = d3.max(totalSumOut);
-        var total = d3.max([totalIn,totalOut]);
 
         svg.heightOutput = (svg.height - svg.margin.zero)*totalOut/(totalIn+totalOut);
 
@@ -154,12 +145,12 @@ function drawHisto1DStack(urlJson, mysvg) {
 
         selectionIn.append("svg:title")
             .text(function(d){
-                return "y:" + d.y + " x " + d.x + " height " + d.height + " color " + d.color;});
+                return  d.item + "\n" + svg.legend[d.x].text + ", " + d.height.toFixed(2) + " " + json[0].unit;});
 
 
         selectionOut.append("svg:title")
             .text(function(d){
-                return "y:" + d.y + " x " + d.x + " height " + d.height + " color " + d.color;});
+                return  d.item + "\n" + svg.legend[d.x].text + ", " + d.height.toFixed(2) + " " + json[0].unit;});
 
 
 
@@ -182,7 +173,6 @@ function drawHisto1DStack(urlJson, mysvg) {
             var text = d3.select(this).text();
             if (Math.floor(+text) != +text){
                 d3.select(this).node().parentNode().remove();
-                return;
             }else{
              return svg.legend[+text].text;
             }
@@ -192,7 +182,8 @@ function drawHisto1DStack(urlJson, mysvg) {
             .attr("class", "axis");
         svg.axisyInput.call(d3.svg.axis()
             .scale(svg.yInput)
-            .orient("left"));
+            .orient("left")
+        );
 
         svg.axisyOutput = svg.append("g").attr('transform', 'translate(' + [svg.margin.left, svg.margin.top] + ')')
             .attr("class", "axis");
@@ -200,25 +191,18 @@ function drawHisto1DStack(urlJson, mysvg) {
             .scale(svg.yOutput)
             .orient("left"));
 
-        /*
-        // Label of the x axis
-        svg.xlabel = svg.axisx.append("text")
-            .attr("class", "label")
-            .attr("text-anchor", "end")
-            .attr("x", width)
-            .attr("y", - 6)
-            .text("Time");
 
-        // Label of the y axis
-        svg.ylabel = svg.axisy.append("text")
+  //      Label of the y axis
+        svg.ylabel = svg.axisyInput.append("text")
             .attr("class", "label")
-            .attr("text-anchor", "end")
-            .attr("y", 6 )
+            .attr("text-anchor", "middle")
             .attr("dy", ".75em")
+            .attr('y',- svg.margin.left)
+            .attr("x",- svg.height/2)
             .attr("transform", "rotate(-90)")
-            .text("Number of Strips");
+            .text(json[0].unit);
          
-
+/*
         //color legend
 
         svg.append("text")
