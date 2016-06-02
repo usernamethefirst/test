@@ -58,10 +58,9 @@ int main()
 
 
   // Fill the web repository with local files, statically compiled files or dynamic files
-  PrecompiledRepository thePrecompRepo("") ;
-  webServer->addRepository(&thePrecompRepo);
 
-  LocalRepository myLocalRepo("", "./html");
+
+  LocalRepository myLocalRepo("", "./exampleRepository");
   webServer->addRepository(&myLocalRepo);
 
 

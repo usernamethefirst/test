@@ -13,3 +13,12 @@
     stroke: #006600;
 
 }
+
+.frame{
+    fill:none;
+}
+
+.rectAxis{
+    fill:#ffffff;
+    stroke:#ffffff;
+}

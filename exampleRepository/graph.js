@@ -1,9 +1,11 @@
-function drawHisto1DStack(urlJson, mysvg) {
+function drawHisto1DStack(urlJson, mydiv) {
 
-    var svg = d3.select('#' + mysvg);
+    var div = d3.select('#' + mydiv);
+
+    var svg = div.select("svg");
     svg.margin = {top: 50, right: 50, bottom: 50, left: 50, zero:30};
-    svg.width = parseInt(d3.select('#' + mysvg).attr('width'), 10) - svg.margin.left - svg.margin.right;
-    svg.height = parseInt(d3.select('#' + mysvg).attr('height'), 10) - svg.margin.bottom - svg.margin.top;
+    svg.width = parseInt(svg.attr('width'), 10) - svg.margin.left - svg.margin.right;
+    svg.height = parseInt(svg.attr('height'), 10) - svg.margin.bottom - svg.margin.top;
 
 
 
@@ -16,12 +18,14 @@ function drawHisto1DStack(urlJson, mysvg) {
 
     svg.svg = svg.append("svg");
 
+
     //Will contain the chart itself, without the axis
     svg.chartInput = svg.svg.attr("x",svg.margin.left).attr("y",svg.margin.top).attr("width",svg.width).attr("height",svg.height).append('g');
     svg.chartOutput = svg.svg.attr("x",svg.margin.left).attr("y",svg.margin.top).attr("width",svg.width).attr("height",svg.height).append('g');
 
     //Will contain the axis and the rectselec, for a better display of scaling
     svg.frame = svg.svg.append("g");
+
     svg.selec = svg.frame.append("rect").attr("class", "rectSelec");
 
 
@@ -52,6 +56,7 @@ function drawHisto1DStack(urlJson, mysvg) {
 
             }
         }
+
 
 
         function sortValues(a, b) {
@@ -127,7 +132,8 @@ function drawHisto1DStack(urlJson, mysvg) {
                                 return svg.yInput(d.y);})
                     .attr("height", function(d){ return svg.yInput(d.height) - svg.yInput.range()[0];})
                     .attr("width",dataWidth)
-                    .attr("fill",function(d){return d.color;});
+                    .attr("fill",function(d){return d.color;})
+                    .attr("stroke","#ffffff");
 
         var selectionOut = svg.chartOutput.selectAll(".data")
             .data(valuesOut)
@@ -138,25 +144,67 @@ function drawHisto1DStack(urlJson, mysvg) {
                 return svg.yOutput(d.y);})
             .attr("height", function(d){ return svg.yOutput.range()[0] - svg.yOutput(d.height);})
             .attr("width",dataWidth)
-            .attr("fill",function(d){return d.color;});
+            .attr("fill",function(d){return d.color;})
+            .attr("stroke","#ffffff");
+
+        var selection = svg.selectAll(".data");
 
 
 
-
-        selectionIn.append("svg:title")
+        selection.append("svg:title")
             .text(function(d){
                 return  d.item + "\n" + svg.legend[d.x].text + ", " + d.height.toFixed(2) + " " + json[0].unit;});
 
 
-        selectionOut.append("svg:title")
-            .text(function(d){
-                return  d.item + "\n" + svg.legend[d.x].text + ", " + d.height.toFixed(2) + " " + json[0].unit;});
+
+        function blink() {
+
+            this.parentNode.appendChild(this);
+            var rect = d3.select(this);
+
+            var col1 = rect.attr("fill"), col2 = "#ffffff",col3 = "#ff0000";
+            rect.attr("stroke",col3).attr("fill",col2);
+            (function doitagain() {
+                rect.transition().duration(1000)
+                  .attr("stroke", col2).attr("fill",col1)
+                  .transition().duration(1000)
+                  .attr("stroke", col3).attr("fill",col2)
+                  .each("end", doitagain);
+            })()
+        }
+
+
+
+
+
+
+
+
+        selection.on("mouseover", function(d){
+            var item = d.item;
+
+            selection.filter(function(d){
+                return d.item == item;
+                })
+              .each(blink);
+
+
+
+        }).on("mouseout",function(d){
+
+            var item = d.item;
+
+            selection.filter(function(d){return d.item === item}).transition().duration(0).attr("stroke","#ffffff").attr("fill",d.color);
+
+        });
+
 
 
 
         svg.axisx = svg.append("g")
             .attr("class", "axis")
             .attr('transform', 'translate(' + [svg.margin.left, svg.heightOutput+svg.margin.top] +  ")");
+        svg.axisx.append("rect").classed("rectAxis",true).attr("width",svg.width).attr("height",svg.margin.zero);
 
         svg.axisx.call(d3.svg.axis()
             .scale(svg.x)
@@ -169,6 +217,7 @@ function drawHisto1DStack(urlJson, mysvg) {
             .attr("y1",svg.margin.zero - svg.heightTick)
             .attr("x2",0)
             .attr("y2",svg.margin.zero);
+
         svg.axisx.selectAll(".tick").select("text").text(function(){
             var text = d3.select(this).text();
             if (Math.floor(+text) != +text){
@@ -201,48 +250,40 @@ function drawHisto1DStack(urlJson, mysvg) {
             .attr("x",- svg.height/2)
             .attr("transform", "rotate(-90)")
             .text(json[0].unit);
-         
-/*
-        //color legend
 
-        svg.append("text")
-            .attr("x", width + margin.left + 1)
-            .attr("y",  margin.top + 5)
-            .attr("text-anchor", "start")
-            .classed("label",true)
-            .text("Legend")
-        ;
-
-        svg.append("rect")
-            .attr("x", width + margin.left + 1)
-            .attr("y",  margin.top + 20)
-            .attr("width", 10)
-            .attr("height", 10)
-            .style("fill", "#4682b4")
-            .style("stroke", "grey");
-
-        svg.append("text")
-            .attr("x", width + margin.left + 13)
-            .attr("y",  margin.top + 27)
-            .attr("text-anchor", "start")
-            .text("Y")
-        ;
-
-        svg.append("text")
-            .attr("x", width + margin.left + 13)
-            .attr("y",  margin.top + 47)
-            .attr("text-anchor", "start")
-            .text("X")
-        ;
+        //ouip
+        var side = 0.75*Math.min(svg.height,svg.width);
+        var pieside = 0.8*side;
+        var popup = div.append("div").attr("style","width:" + side + "; height:" + side + "; margin:auto; display:none;");
+        popup.pieChart = null;
+        selection.on("click",function(){
+            if(popup.pieChart == null) {
+                popup.pieChart = popup.append("svg").attr("width", pieside).attr("height", pieside).attr("style","margin:auto");
+                drawComplData("./datacompl.json",popup,pieside);
+                popup.style("display","none");
+                d3.event.stopPropagation();
 
 
-        svg.append("rect")
-            .attr("x", width + margin.left + 1)
-            .attr("y",  margin.top + 40)
-            .attr("width", 10)
-            .attr("height", 10)
-            .style("fill", "#001c9c")
-            .style("stroke", "grey");*/
+            }
+        });
+
+        popup.on("click",function(){
+            d3.event.stopPropagation();
+        });
+
+        d3.select(window).on("click." + mydiv,function(){
+            if(popup.pieChart != null){
+                popup.style("display","none");
+                popup.pieChart.remove();
+                popup.pieChart = null;
+            }
+        });
+
+
+        svg.newX = d3.scale.linear().range(svg.x.range()).domain(svg.x.domain());
+        svg.newYOutput = d3.scale.linear().range(svg.yOutput.range()).domain(svg.yOutput.domain());
+        svg.newYInput = d3.scale.linear().range(svg.yInput.range()).domain(svg.yInput.domain());
+
 
         addZoomDouble(svg,updateHisto1DStack);
 
@@ -254,11 +295,26 @@ function drawHisto1DStack(urlJson, mysvg) {
 
 
 function updateHisto1DStack(svg){
-
+/*
 
     svg.chartOutput.attr("transform","matrix(" + (svg.scalex*svg.scale) + ", 0, 0, " + (svg.scaley*svg.scale) + ", " + svg.translate[0] + "," + svg.translate[1] + ")" );
 
     svg.chartInput.attr("transform","matrix(" + (svg.scalex*svg.scale) + ", 0, 0, " + (svg.scaley*svg.scale) + ", " + svg.translate[0] + "," + (svg.translate[1] - (svg.scaley*svg.scale-1)*svg.margin.zero) + ")" );
+*/
+    var dataWidth = 0.75*(svg.newX(svg.newX.domain()[0] + 1) - svg.newX.range()[0]);
+
+    svg.chartInput.selectAll(".data")
+      .attr("x",function(d){return svg.newX(d.x - 0.375);})
+      .attr("y", function(d){return svg.newYInput(d.y);})
+      .attr("height", function(d){return svg.newYInput(d.height) - svg.newYInput(svg.yInput.domain()[0]);})
+      .attr("width", dataWidth);
+
+
+    svg.chartOutput.selectAll(".data")
+      .attr("x",function(d){return svg.newX(d.x - 0.375);})
+      .attr("y", function(d){return svg.newYOutput(d.y);})
+      .attr("height", function(d){return svg.newYOutput(svg.yOutput.domain()[0]) - svg.newYOutput(d.height);})
+      .attr("width", dataWidth);
 
 
     svg.axisx.call(d3.svg.axis()
@@ -561,6 +617,32 @@ function addZoomDouble(svg,updateFunction){
     svg.call(svg.zoom).on("dblclick.zoom", null);
 }
 
+/************************************************************************************************************/
+
+function drawComplData(urlJson,popup,pieside){
+
+    var chartside = 0.75*pieside;
+    
+    d3.json(urlJson,function(error, json){
+
+        var values = json.data;
+        values.sort(function(a,b){
+            return a.y -b.y;
+        });
+
+        popup.pieChart.selectAll(".part").data(values).enter().call(function(d){
+
+            popup.pieChart.append("")
+
+        })
+
+
+
+    });
+
+}
+
+
 
 /************************************************************************************************************/
 
@@ -582,3 +664,4 @@ d3.select(window).on("keydown",function (){
 
 
 drawHisto1DStack("./data.json", "Graph");
+drawHisto1DStack("./data2.json", "Graph2");
