@@ -16,12 +16,14 @@ function drawHisto1DStack(urlJson, mydiv) {
 
     svg.yOutput = d3.scale.linear().clamp(true);
 
-    svg.svg = svg.append("svg");
+    svg.svg = svg.append("svg").attr("x",svg.margin.left).attr("y",svg.margin.top).attr("width",svg.width).attr("height",svg.height);
 
 
     //Will contain the chart itself, without the axis
-    svg.chartInput = svg.svg.attr("x",svg.margin.left).attr("y",svg.margin.top).attr("width",svg.width).attr("height",svg.height).append('g');
-    svg.chartOutput = svg.svg.attr("x",svg.margin.left).attr("y",svg.margin.top).attr("width",svg.width).attr("height",svg.height).append('g');
+    svg.chartBackground = svg.svg.append("g");
+    svg.chartInput = svg.svg.append('g');
+    svg.chartOutput = svg.svg.append('g');
+
 
     //Will contain the axis and the rectselec, for a better display of scaling
     svg.frame = svg.svg.append("g");
@@ -38,18 +40,30 @@ function drawHisto1DStack(urlJson, mydiv) {
         var valuesOut = [];
         var xlength = json[1].legend.length;
 
-        for (var i = 2; i<json.length; i++ ){
+        var colorMap = new Map();
+        var sumMap = new Map();
+        var i;
+
+        colorMap.set(" Remainder ", "#f2f2f2");
+
+        for (i = 2; i<json.length; i++ ){
 
             for(var j = 0; j < xlength; j++) {
                 json[i].tab[j].x = j;
                 json[i].tab[j].height = json[i].tab[j].y;
 
-                if (i % 2 == 0) {
+                if(!sumMap.has(json[i].tab[j].item)){
+                    sumMap.set(json[i].tab[j].item,json[i].tab[j].height);
+                }else{
+                    sumMap.set(json[i].tab[j].item,sumMap.get(json[i].tab[j].item) + json[i].tab[j].height)
+                }
 
+                if (i % 2 == 0) {
+                    json[i].tab[j].stroke = "#fff";
                     valuesIn.push(json[i].tab[j]);
 
                 }else{
-
+                    json[i].tab[j].stroke="#cccccc";
                     valuesOut.push(json[i].tab[j]);
 
                 }
@@ -57,11 +71,40 @@ function drawHisto1DStack(urlJson, mydiv) {
             }
         }
 
+        sumMap.delete(" Remainder ");
+        var sumArray = [];
+
+        var f = colorEval();
+
+
+        sumMap.forEach(function(value,key){
+            sumArray.push({item:key,sum:value});
+        });
+
+        sumArray.sort(function(a,b){
+            return b.sum - a.sum;
+        });
+
+        console.log(sumArray);
+        //The most importants elements should have distinct colors.
+
+        sumArray.forEach(function(elem){
+            colorMap.set(elem.item,f())
+        });
+
+        console.log(colorMap);
 
 
         function sortValues(a, b) {
+
             if(a.x - b.x !=0){
                 return a.x - b.x;
+            }
+            if(a.item == " Remainder "){
+                return -1;
+            }
+            if(b.item == " Remainder "){
+                return 1;
             }
             return b.height - a.height;
         }
@@ -119,6 +162,23 @@ function drawHisto1DStack(urlJson, mydiv) {
         svg.yInput.domain([0,totalIn]);
         svg.yOutput.domain([0,totalOut]);
 
+        //Text background
+        svg.textOutput = svg.chartBackground.append("text").attr("transform", "translate(" + (svg.width/2) + "," +
+          (svg.heightOutput/4) + ")")
+          .classed("bckgr-txt",true)
+          .style("fill","#e6e6e6")
+          .text("Outgoing");
+
+        svg.rectInput = svg.chartBackground.append("rect").attr("x",0).attr("y",svg.heightOutput+svg.margin.zero)
+          .attr("width",svg.width)
+          .attr("height",svg.height-svg.heightOutput-svg.margin.zero)
+          .style("fill","#e6e6e6");
+
+        svg.textInput = svg.chartBackground.append("text").attr("transform", "translate(" + (svg.width/2) + "," +
+            ((svg.height - svg.heightOutput - svg.margin.zero) *0.75 + svg.heightOutput + svg.margin.zero) + ")")
+          .classed("bckgr-txt",true)
+          .text("Ingoing")
+          .style("fill", "#fff");
 
 
 
@@ -132,8 +192,8 @@ function drawHisto1DStack(urlJson, mydiv) {
                                 return svg.yInput(d.y);})
                     .attr("height", function(d){ return svg.yInput(d.height) - svg.yInput.range()[0];})
                     .attr("width",dataWidth)
-                    .attr("fill",function(d){return d.color;})
-                    .attr("stroke","#ffffff");
+                    .attr("fill",function(d){return colorMap.get(d.item);})
+                    .attr("stroke","#fff");
 
         var selectionOut = svg.chartOutput.selectAll(".data")
             .data(valuesOut)
@@ -144,8 +204,8 @@ function drawHisto1DStack(urlJson, mydiv) {
                 return svg.yOutput(d.y);})
             .attr("height", function(d){ return svg.yOutput.range()[0] - svg.yOutput(d.height);})
             .attr("width",dataWidth)
-            .attr("fill",function(d){return d.color;})
-            .attr("stroke","#ffffff");
+            .attr("fill",function(d){return colorMap.get(d.item);})
+            .attr("stroke","#cccccc");
 
         var selection = svg.selectAll(".data");
 
@@ -162,23 +222,16 @@ function drawHisto1DStack(urlJson, mydiv) {
             this.parentNode.appendChild(this);
             var rect = d3.select(this);
 
-            var col1 = rect.attr("fill"), col2 = "#ffffff",col3 = "#ff0000";
+            var col1 = rect.attr("fill"), col2 = "#ffffff",col3 = "#ff0000",col4 = rect.datum().stroke;
             rect.attr("stroke",col3).attr("fill",col2);
             (function doitagain() {
                 rect.transition().duration(1000)
-                  .attr("stroke", col2).attr("fill",col1)
+                  .attr("stroke", col4).attr("fill",col1)
                   .transition().duration(1000)
                   .attr("stroke", col3).attr("fill",col2)
                   .each("end", doitagain);
             })()
         }
-
-
-
-
-
-
-
 
         selection.on("mouseover", function(d){
             var item = d.item;
@@ -194,7 +247,7 @@ function drawHisto1DStack(urlJson, mydiv) {
 
             var item = d.item;
 
-            selection.filter(function(d){return d.item === item}).transition().duration(0).attr("stroke","#ffffff").attr("fill",d.color);
+            selection.filter(function(d){return d.item === item}).transition().duration(0).attr("stroke",function(d){return d.stroke;}).attr("fill",colorMap.get(d.item));
 
         });
 
@@ -251,16 +304,21 @@ function drawHisto1DStack(urlJson, mydiv) {
             .attr("transform", "rotate(-90)")
             .text(json[0].unit);
 
-        //ouip
         var side = 0.75*Math.min(svg.height,svg.width);
-        var pieside = 0.8*side;
-        var popup = div.append("div").attr("style","width:" + side + "; height:" + side + "; margin:auto; display:none;");
+        var pieside = 1*side;
+        var overlay = div.append("div").classed("overlay",true).style("display","none");
+        var popup = div.append("div").classed("popup",true).style({"width":side + "px","height":side + "px","display":"none",
+                                        "left":((svg.width-side)/2 +svg.margin.left)+"px" ,"bottom": ((svg.height-side)/2 +svg.margin.bottom) + "px"});
         popup.pieChart = null;
-        selection.on("click",function(){
+
+
+
+        selection.on("click",function(d){
             if(popup.pieChart == null) {
-                popup.pieChart = popup.append("svg").attr("width", pieside).attr("height", pieside).attr("style","margin:auto");
-                drawComplData("./datacompl.json",popup,pieside);
-                popup.style("display","none");
+                overlay.style("display",null);
+                popup.pieChart = popup.append("svg").attr("width", pieside).attr("height", pieside).classed("pieSvg",true);
+                drawComplData("./datacompl.json",popup,pieside,d.height);
+                popup.style("display",null);
                 d3.event.stopPropagation();
 
 
@@ -273,6 +331,7 @@ function drawHisto1DStack(urlJson, mydiv) {
 
         d3.select(window).on("click." + mydiv,function(){
             if(popup.pieChart != null){
+                overlay.style("display","none");
                 popup.style("display","none");
                 popup.pieChart.remove();
                 popup.pieChart = null;
@@ -301,19 +360,35 @@ function updateHisto1DStack(svg){
 
     svg.chartInput.attr("transform","matrix(" + (svg.scalex*svg.scale) + ", 0, 0, " + (svg.scaley*svg.scale) + ", " + svg.translate[0] + "," + (svg.translate[1] - (svg.scaley*svg.scale-1)*svg.margin.zero) + ")" );
 */
+
+
+    var newHeightOuput = svg.newYOutput(svg.yOutput.domain()[0]);
+    var newHOmarg = svg.newYInput(svg.yInput.domain()[0]);
+
+    svg.rectInput.attr("y", newHOmarg).attr("height",svg.height-newHOmarg);
+    svg.textOutput.attr("transform", "translate(" + (svg.width/2) + "," +
+      Math.min(newHeightOuput, svg.height)/4 + ")");
+
+
+    svg.textInput.attr("transform", "translate(" + (svg.width/2) + "," +
+        ((svg.height - Math.max(0,newHOmarg)) *0.75 + Math.max(0,newHOmarg)) + ")");
+
+
     var dataWidth = 0.75*(svg.newX(svg.newX.domain()[0] + 1) - svg.newX.range()[0]);
 
     svg.chartInput.selectAll(".data")
       .attr("x",function(d){return svg.newX(d.x - 0.375);})
       .attr("y", function(d){return svg.newYInput(d.y);})
-      .attr("height", function(d){return svg.newYInput(d.height) - svg.newYInput(svg.yInput.domain()[0]);})
+      .attr("height", function(d){return svg.newYInput(d.height) - newHOmarg;})
       .attr("width", dataWidth);
+
+
 
 
     svg.chartOutput.selectAll(".data")
       .attr("x",function(d){return svg.newX(d.x - 0.375);})
       .attr("y", function(d){return svg.newYOutput(d.y);})
-      .attr("height", function(d){return svg.newYOutput(svg.yOutput.domain()[0]) - svg.newYOutput(d.height);})
+      .attr("height", function(d){return newHeightOuput - svg.newYOutput(d.height);})
       .attr("width", dataWidth);
 
 
@@ -331,7 +406,6 @@ function updateHisto1DStack(svg){
         var text = d3.select(this).text();
         if (Math.floor(+text) != +text){
             d3.select(this).node().parentNode.remove();
-            return;
         }else{
             return svg.legend[+text].text;
         }
@@ -619,32 +693,246 @@ function addZoomDouble(svg,updateFunction){
 
 /************************************************************************************************************/
 
-function drawComplData(urlJson,popup,pieside){
+function drawComplData(urlJson,popup,pieside,total){
 
     var chartside = 0.75*pieside;
-    
+
+    //TEMPORAIRE: test, à supprimer lors de l'utilisation avec de véritables valeurs.
+    console.log(total);
+    total=6000000000;
+    //TEMPORAIRE
+
+    var innerRad = 0;
+    var outerRad = chartside/2;
+
     d3.json(urlJson,function(error, json){
 
         var values = json.data;
+
+        var sum = d3.sum(values,function(e){
+            return e.y;
+        });
+
         values.sort(function(a,b){
             return a.y -b.y;
         });
 
-        popup.pieChart.selectAll(".part").data(values).enter().call(function(d){
+        var f = colorEval();
+        var listColors = [];
+        var length = values.length;
 
-            popup.pieChart.append("")
 
+        for(var w = 0; w < length; w++){
+
+            listColors.push(f())
+
+        }
+
+        values.push({y: total -sum, hostname:" Remainder ",amount:bytesConvert(total-sum)});
+
+        listColors.push("#f2f2f2");
+
+
+
+        function anglesCalc(){
+            var posAngle = 0;
+            return function(value){
+                value.startAngle = posAngle;
+                posAngle += 2*Math.PI * value.y / total;
+                value.endAngle = posAngle;
+            }
+        }
+
+        var functAngles = anglesCalc();
+
+        values.forEach(functAngles);
+
+/*
+        var f = colorEval();
+
+        for(var w = 0; w < 40; w++){
+
+            console.log("val: " + f().h);
+
+        }
+*/
+
+
+        var arcStart = d3.svg.arc()
+          .innerRadius(innerRad)
+          .outerRadius(outerRad)
+          .startAngle(function(d){return d.startAngle; })
+          .endAngle(function(d){return d.startAngle;});
+
+        var arc = d3.svg.arc()
+          .innerRadius(innerRad)
+          .outerRadius(outerRad)
+          .startAngle(function(d){return d.startAngle; })
+          .endAngle(function(d){return d.endAngle;});
+
+        popup.pieElements = popup.pieChart.append("g")
+          .attr("transform","translate(" + (pieside/2) + "," + (pieside/2) + ")")
+          .selectAll(".elem").data(values).enter()
+          .append("g")
+          .classed("elem",true);
+
+        popup.pieParts = popup.pieElements.append("path")
+          .style("fill",function(d,i){ return listColors[i]; })
+          .classed("part",true)
+          .attr("d",arcStart);
+        popup.pieParts.transition().attr("d",arc);
+
+        popup.pieParts.append("svg:title").text(function(d){
+            return  d.hostname + "\n" + d.amount});
+
+        popup.pieElements.append("text")
+          .attr("transform",function(d){
+              var midAngle = (d.endAngle + d.startAngle)/2;
+              var dist = outerRad * 0.8;
+              return "translate(" + (Math.sin(midAngle)*dist) + "," +(-Math.cos(midAngle)*dist) +")";})
+          .text(function(d){ return d.amount;});
+
+        popup.pieElements.on("mouseover",function(d){
+            var part = d3.select(this);
+            var midAngle = (d.endAngle + d.startAngle)/2;
+            var distTranslTemp = outerRad/4;
+            var distTransl = outerRad/10;
+
+            part.transition()
+              .attr("transform","translate(" + (Math.sin(midAngle)*distTranslTemp) + "," +(-Math.cos(midAngle)*distTranslTemp) +")" )
+              .transition()
+              .attr("transform","translate(" + (Math.sin(midAngle)*distTransl) + "," +(-Math.cos(midAngle)*distTransl) +")" );
+            part.on("mouseout",function(){
+                    part.transition().attr("transform", "translate(0,0)");
+            });
         })
 
-
-
     });
+}
+
+/************************************************************************************************************
+
+ convert bytes to NiB string
+
+************************************************************************************************************/
+
+function bytesConvert(nbBytes){
+
+    var exp = Math.floor(Math.log(nbBytes)/Math.log(1024));
+
+    var value = (nbBytes/Math.pow(1024,exp)).toFixed(1);
+
+    if(value == Math.floor(value)){
+        value = Math.floor(value);
+    }
+
+    switch (exp){
+
+        case 0:
+            return value + " B";
+        case 1 :
+            return value + " KB";
+        case 2 :
+            return value + " MB";
+        case 3 :
+            return value + " GB";
+        case 4 :
+            return value + " TB";
+        case 5 :
+            return value + " PB";
+        case 6 :
+            return value + " EB";
+        case 7 :
+            return value + " ZB";
+        default:
+        case 8 :
+            return value + " YB";
+    }
 
 }
 
 
+/************************************************************************************************************
+
+ Return a function that should give a new color each, two successive colors should be different enough.
+
+
+ ************************************************************************************************************/
+
+
+
+function colorEval(){
+
+    var lim = 5;
+    var threshold = 360/Math.pow(2,lim);
+
+    var val = 0;
+    var extent = 360;
+    var color;
+
+    var j = -1;
+    var ylim = 5;
+    var ystart = ylim, zstart = 3;
+    var ythresh = ystart;
+    var y = ystart;
+    var z = zstart;
+
+    var start = 0.4;
+    var segm = (0.8 - start)/6;
+
+
+    var s = start + segm*y;
+    var l = start + segm*z;
+
+
+    return function(){
+
+        color = d3.hsl(val,s,l);
+        val = val + j*180 + extent * (1+j)/2;
+        j = -1 * j;
+
+
+        y = (y+4)%7;
+        if(y==ythresh){
+            y++;
+            ythresh++;
+        }
+        z = (z+4)%7;
+        s = y*segm +start;
+        l= z*segm+start;
+
+
+        if(val >= 360){
+
+            extent = extent/2;
+
+            if(extent <= threshold){
+                val = 0;
+                extent = 360;
+                ystart = (ystart+4)%7;
+                if(ystart==ylim){
+                    ylim++;
+                    ystart++;
+                }
+                zstart = (zstart+4)%7;
+                y=ystart;
+                z=zstart;
+                ythresh = ystart;
+                s = start + segm*y;
+                l = start + segm*z;
+            }else{
+                val = extent/2 + 180;
+            }
+        }
+
+        return color;
+    }
+}
+
 
 /************************************************************************************************************/
+
+
 
 isShiftKeyDown = false;
 d3.select(window).on("keydown",function (){
