@@ -2,6 +2,10 @@ function drawHisto1DStack(urlJson, mydiv) {
 
     var div = d3.select('#' + mydiv);
 
+    //table for legend
+    var table = div.select("table");
+
+
     var svg = div.select("svg");
     svg.margin = {top: 50, right: 50, bottom: 50, left: 50, zero:30};
     svg.width = parseInt(svg.attr('width'), 10) - svg.margin.left - svg.margin.right;
@@ -49,6 +53,9 @@ function drawHisto1DStack(urlJson, mydiv) {
         for (i = 2; i<json.length; i++ ){
 
             for(var j = 0; j < xlength; j++) {
+                if(json[i].tab[j].y==0){
+                    continue;
+                }
                 json[i].tab[j].x = j;
                 json[i].tab[j].height = json[i].tab[j].y;
 
@@ -233,23 +240,38 @@ function drawHisto1DStack(urlJson, mydiv) {
             })()
         }
 
-        selection.on("mouseover", function(d){
+
+        function activationElems(d){
+
             var item = d.item;
 
-            selection.filter(function(d){
+            function testitem(d){
                 return d.item == item;
-                })
-              .each(blink);
 
+            }
 
+            trSelec.filter(testitem).classed("outlined",true);
 
-        }).on("mouseout",function(d){
+            selection.filter(testitem).each(blink);
 
-            var item = d.item;
+        }
 
-            selection.filter(function(d){return d.item === item}).transition().duration(0).attr("stroke",function(d){return d.stroke;}).attr("fill",colorMap.get(d.item));
+        function desactivationElems(d){
 
-        });
+            function testitem(data){
+                return data.item == d.item;
+
+            }
+
+            if(popup.pieChart == null) {
+                trSelec.filter(testitem).classed("outlined", false);
+            }
+
+            selection.filter(testitem).transition().duration(0).attr("stroke",function(d){return d.stroke;}).attr("fill",colorMap.get(d.item));
+
+        }
+
+        selection.on("mouseover", activationElems).on("mouseout",desactivationElems);
 
 
 
@@ -312,7 +334,6 @@ function drawHisto1DStack(urlJson, mydiv) {
         popup.pieChart = null;
 
 
-
         selection.on("click",function(d){
             if(popup.pieChart == null) {
                 overlay.style("display",null);
@@ -320,7 +341,6 @@ function drawHisto1DStack(urlJson, mydiv) {
                 drawComplData("./datacompl.json",popup,pieside,d.height);
                 popup.style("display",null);
                 d3.event.stopPropagation();
-
 
             }
         });
@@ -331,6 +351,7 @@ function drawHisto1DStack(urlJson, mydiv) {
 
         d3.select(window).on("click." + mydiv,function(){
             if(popup.pieChart != null){
+                trSelec.classed("outlined",false);
                 overlay.style("display","none");
                 popup.style("display","none");
                 popup.pieChart.remove();
@@ -338,6 +359,19 @@ function drawHisto1DStack(urlJson, mydiv) {
             }
         });
 
+        //Legend creation
+        
+        var trSelec;
+        sumArray.unshift({item:" Remainder "});
+        trSelec = table.selectAll("tr").data(sumArray).enter().append("tr");
+        trSelec.append("td").append("div").classed("lgd",true).style("background-color", function(d){return colorMap.get(d.item);});
+        trSelec.append("td").text(function(d){return d.item;});
+
+        trSelec.on("mouseover",activationElems).on("mouseout",desactivationElems);
+
+        
+        //zoom
+        
 
         svg.newX = d3.scale.linear().range(svg.x.range()).domain(svg.x.domain());
         svg.newYOutput = d3.scale.linear().range(svg.yOutput.range()).domain(svg.yOutput.domain());
@@ -758,17 +792,23 @@ function drawComplData(urlJson,popup,pieside,total){
 */
 
 
-        var arcStart = d3.svg.arc()
-          .innerRadius(innerRad)
-          .outerRadius(outerRad)
-          .startAngle(function(d){return d.startAngle; })
-          .endAngle(function(d){return d.startAngle;});
-
         var arc = d3.svg.arc()
           .innerRadius(innerRad)
-          .outerRadius(outerRad)
-          .startAngle(function(d){return d.startAngle; })
-          .endAngle(function(d){return d.endAngle;});
+          .outerRadius(outerRad);
+
+        function interpolateArc(d){
+
+            //.toFixed(5) avoid having complete circles at the beginning of the transition,
+            //if start and end angles are too close, the precision isn't good enough to order them
+            //correctly and d3 can creates a 2PI angle.
+
+            return function(t){
+                return (arc
+                  .startAngle(d.startAngle)
+                  .endAngle((d.startAngle + t * (d.endAngle - d.startAngle)).toFixed(5)))();
+            }
+
+        }
 
         popup.pieElements = popup.pieChart.append("g")
           .attr("transform","translate(" + (pieside/2) + "," + (pieside/2) + ")")
@@ -777,10 +817,11 @@ function drawComplData(urlJson,popup,pieside,total){
           .classed("elem",true);
 
         popup.pieParts = popup.pieElements.append("path")
+          .attr("d","")
           .style("fill",function(d,i){ return listColors[i]; })
-          .classed("part",true)
-          .attr("d",arcStart);
-        popup.pieParts.transition().attr("d",arc);
+          .classed("part",true);
+
+        popup.pieParts.transition().duration(1000).attrTween("d",interpolateArc);
 
         popup.pieParts.append("svg:title").text(function(d){
             return  d.hostname + "\n" + d.amount});
@@ -928,6 +969,11 @@ function colorEval(){
         return color;
     }
 }
+
+
+/************************************************************************************************************/
+
+
 
 
 /************************************************************************************************************/

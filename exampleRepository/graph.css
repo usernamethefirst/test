@@ -13,9 +13,24 @@
     stroke: #006600;
 
 }
-
+.lgd{
+    width: 0.75em;
+    height: 0.75em;
+}
 .frame{
     fill:none;
+}
+
+table{
+    border-collapse: collapse;
+    width: 100%;
+}
+
+
+tr.outlined{
+
+    border: solid thin;
+
 }
 
 .rectAxis{
@@ -33,11 +48,36 @@
 
 }
 
+col.color{
+/*
+    display: inline-block;
+    padding-bottom: 0.5em;
+    padding-top: 0.5em;
+    width:25%;*/
+    width: 20%;
+}
+col.item{
+    padding-top: 100px;
+
+    width: 60%;
+}
+
+
 .graph{
     position:relative;
     background-color: #fcfcfc;
 }
+.diagram{
+    display: inline-block;
+}
 
+div.diagram{
+    width: 200px;
+    height: 650px;
+    overflow: scroll;
+    vertical-align: top;
+    cursor: default;
+}
 .popup{
     position:absolute;
     background-color: #fff6f6;
@@ -45,6 +85,13 @@
     border-radius: 6px;
     box-shadow: #333 2px 2px 4px;
 
+}
+
+table tr:nth-child(even) {
+    background-color: #eee;
+}
+table tr:nth-child(odd) {
+    background-color: #fff;
 }
 
 .overlay{
