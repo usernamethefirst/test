@@ -13,6 +13,11 @@
     stroke: #006600;
 
 }
+svg text{
+    font: 15px arial;
+    font-weight: lighter;
+
+}
 .lgd{
     width: 0.75em;
     height: 0.75em;
@@ -117,9 +122,10 @@ table tr:nth-child(odd) {
 }
 
 
-.elem text {
+.elemtext {
     font: 10px arial;
     text-anchor: middle;
+
 }
 
 .bckgr-txt{

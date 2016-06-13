@@ -885,6 +885,7 @@ function drawComplData(urlJson,popup,pieside,total){
 
     var chartside = 0.75*pieside;
 
+
     //TEMPORAIRE: test, à supprimer lors de l'utilisation avec de véritables valeurs.
     console.log(total);
     total=6000000000;
@@ -892,6 +893,8 @@ function drawComplData(urlJson,popup,pieside,total){
 
     popup.innerRad = 0;
     popup.outerRad = chartside/2;
+    var dist = popup.outerRad * 0.8;
+
 
     d3.json(urlJson,function(error, json){
 
@@ -981,10 +984,9 @@ function drawComplData(urlJson,popup,pieside,total){
         popup.pieParts.append("svg:title").text(function(d){
             return  d.hostname + "\n" + d.amount});
 
-        popup.pieText = popup.pieElements.append("text")
+        popup.pieText = popup.g.selectAll("text").data(values).enter().append("text").classed("elemtext",true)
           .attr("transform",function(d){
               var midAngle = (d.endAngle + d.startAngle)/2;
-              var dist = popup.outerRad * 0.8;
               return "translate(" + (Math.sin(midAngle)*dist) + "," +(-Math.cos(midAngle)*dist) +")";})
           .text(function(d){ return d.amount;});
 
@@ -998,8 +1000,16 @@ function drawComplData(urlJson,popup,pieside,total){
               .attr("transform","translate(" + (Math.sin(midAngle)*distTranslTemp) + "," +(-Math.cos(midAngle)*distTranslTemp) +")" )
               .transition()
               .attr("transform","translate(" + (Math.sin(midAngle)*distTransl) + "," +(-Math.cos(midAngle)*distTransl) +")" );
+
+            popup.pieText.filter(function(data){return data.hostname == d.hostname}).transition()
+              .attr("transform","translate(" + (Math.sin(midAngle)*(distTranslTemp + dist)) + "," +(-Math.cos(midAngle)*(distTranslTemp+dist)) +")" )
+              .transition()
+              .attr("transform","translate(" + (Math.sin(midAngle)*(distTransl+dist)) + "," +(-Math.cos(midAngle)*(distTransl+dist)) +")" );
+
             part.on("mouseout",function(){
                     part.transition().attr("transform", "translate(0,0)");
+                popup.pieText.filter(function(data){return data.hostname == d.hostname}).transition().attr("transform", "translate(" + (Math.sin(midAngle)*dist) + "," +(-Math.cos(midAngle)*dist) +")");
+
             });
         })
 
@@ -1055,7 +1065,7 @@ function bytesConvert(nbBytes){
 
  ************************************************************************************************************/
 
-
+/*
 
 function colorEval(){
 
@@ -1125,6 +1135,63 @@ function colorEval(){
     }
 }
 
+*/
+/************************************************************************************************************/
+
+
+
+
+function colorEval(){
+
+    var calcexpmin;
+    var idecal;
+    var val = 0;
+    var exp;
+    var i = 0;
+
+
+    var color;
+
+    var y = 5;
+    var z = 3;
+
+    var start = 0.4;
+    var segm = (0.8 - start)/6;
+
+
+    var s = start + segm*y;
+    var l = start + segm*z;
+
+
+    return function(){
+        i++;
+        color = d3.hsl(val,s,l);
+        exp = Math.floor(Math.log(i)/Math.log(2));
+        idecal = i - Math.pow(2,exp);
+        calcexpmin = exp + 1;
+        do{
+            idecal = idecal / 2;
+            calcexpmin --;
+        }
+        while(idecal == Math.floor(idecal) && calcexpmin > 0);
+
+        console.log("i " + i + "  exp " + exp + " idecal "+ idecal + " calcexpmin " + calcexpmin);
+
+        val =(val + Math.pow(2,calcexpmin)*180/Math.pow(2,exp))%360;
+        console.log("val " + val);
+
+
+        y = (y+4)%7;
+        z = (z+4)%7;
+        s = y*segm +start;
+        l= z*segm +start;
+
+
+
+        return color;
+    }
+}
+
 
 /************************************************************************************************************/
 
@@ -1164,4 +1231,4 @@ d3.select(window).on("keydown",function (){
 
 
 drawHisto1DStack("./data.json", "Graph");
-//drawHisto1DStack("./data2.json", "Graph2");
+drawHisto1DStack("./data2.json", "Graph2");
