@@ -559,7 +559,6 @@ function addZoomDouble(svg,updateFunction){
       .attr("height",svg.height).attr("width",0).attr("fill-opacity",0).classed("rectOverlay",true);
 
 
-    // constant
     svg.heightData = svg.height - svg.margin.zero;
 
     svg.zoom = d3.behavior.zoom().scaleExtent([1, Infinity]).center([0,0]).on("zoom", function () {
@@ -661,7 +660,7 @@ function addZoomDouble(svg,updateFunction){
                 console.log("carré mousecoord " + mouseCoord + " start " + startCoord );
 
                 mouseCoord[0] = Math.min(Math.max(mouseCoord[0],svg.x.range()[0]),svg.x.range()[1]);
-                mouseCoord[1] = Math.min(Math.max(mouseCoord[1],svg.yOutput.range()[1]),svg.yInput.range()[1]);
+                mouseCoord[1] = Math.min(Math.max(mouseCoord[1],0),svg.height);
 
                 svg.selec.attr("x", Math.min(mouseCoord[0],startCoord[0]))
                     .attr("y", Math.min(mouseCoord[1],startCoord[1]))
@@ -673,13 +672,13 @@ function addZoomDouble(svg,updateFunction){
         })
 
         .on("zoomstart",function () {
-            console.log("acttransl " + -svg.translate[1]/(svg.scaley*svg.scale));
+            console.log("translate1 " + svg.translate[1] );
             if(isShiftKeyDown){
                 console.log("key is down start");
                 rectOverlay.attr("width",svg.width);
                 startCoord = d3.mouse(svg.frame.node());
                 startCoord[0] = Math.min(Math.max(startCoord[0],svg.x.range()[0]),svg.x.range()[1]);
-                startCoord[1] = Math.min(Math.max(startCoord[1],svg.yOutput.range()[1]),svg.yInput.range()[1]);
+                startCoord[1] = Math.min(Math.max(startCoord[1],0),svg.height);
 
                 svg.style("cursor","crosshair");
             }
@@ -800,27 +799,19 @@ function redraw(div,svg){
     var oldheightData = svg.heightData;
     svg.heightData = svg.;
 */
+    
     var margIncTransl = Math.max(-svg.margin.zero,Math.min(svg.translate[1] + (svg.scale*svg.scaley)*oldheightoutput,0));
     var margInView = Math.max(-svg.margin.zero,Math.min((svg.translate[1]-oldsvgheight) + (svg.scale*svg.scaley)*oldheightoutput,0)) - margIncTransl;
 
+    var oldheightData = svg.heightData;
+    svg.heightData = svg.height - svg.margin.zero;
+    svg.heightOutput = svg.heightOutput*svg.heightData/oldheightData;
+
+
     console.log("marginview " + margInView);
 
-    var oldscaleytot = svg.scale*svg.scaley;
-    var oldscalextot = svg.scale*svg.scalex;
-
-    var scaleytot = svg.scale*svg.scaley*(svg.height + margInView)*oldheightData/
-      ( (oldsvgheight + margInView)*(svg.heightData));
-
-    var scalextot = svg.scale*svg.scalex;
-
-    svg.scale = Math.max(scalextot,scaleytot);
-    svg.scalex = scalextot/svg.scale;
-    svg.scaley = scaleytot/svg.scale;
-
-    svg.zoom.scale(svg.scale);
-
-    var ratiox = svg.width/oldsvgwidth*scalextot/oldscalextot;
-    var ratioy = svg.heightData/oldheightData*scaleytot/oldscaleytot ;
+  
+    var ratiox = svg.width/oldsvgwidth;
 
     svg.x.range([0, svg.width]);
 
@@ -829,7 +820,6 @@ function redraw(div,svg){
 
     svg.svg.attr("width",svg.width).attr("height",svg.height);
 
-    svg.heightOutput = svg.heightOutput*svg.heightData/oldheightData;
 
 
     svg.rectInput.attr("width",svg.width);
@@ -848,14 +838,28 @@ function redraw(div,svg){
 
 
     console.log("marincltransl " + margIncTransl);
-    svg.translate[1] = (svg.translate[1] - margIncTransl) * ratioy + margIncTransl;
+    svg.translate[1] = (svg.translate[1] - margIncTransl) * (svg.height + margInView)/(oldsvgheight + margInView) + margIncTransl;
     svg.translate[0] = svg.translate[0]*ratiox;
+
+    var oldscaleytot = svg.scale*svg.scaley;
+    var oldscalextot = svg.scale*svg.scalex;
+
+    var scaleytot = oldscaleytot * (svg.height + margInView) * oldheightData / (svg.heightData * (oldsvgheight + margInView)) ;
+ 
+    var scalextot = svg.scale*svg.scalex;
+ 
+    svg.scale = Math.max(scalextot,scaleytot);
+    svg.scalex = scalextot/svg.scale;
+    svg.scaley = scaleytot/svg.scale;
+ 
+    svg.zoom.scale(svg.scale);
 
 
     svg.newX.range([0,svg.width]);
     svg.newYOutput.range([Math.min(svg.height,Math.max(0,svg.heightOutput*svg.scale*svg.scaley+svg.translate[1])),0]);
     svg.newYInput.range([Math.min(svg.height,Math.max(0,svg.heightOutput*svg.scale*svg.scaley+svg.translate[1] + svg.margin.zero)),svg.height]);
     svg.zoom.translate(svg.translate);
+    console.log("redraw translate1 " + svg.translate[1]);
 
     updateHisto1DStack(svg);
 
