@@ -560,7 +560,7 @@ function addZoomDouble(svg,updateFunction){
 
 
     // constant
-    svg.heightNM = svg.height - svg.margin.zero;
+    svg.heightData = svg.height - svg.margin.zero;
 
     svg.zoom = d3.behavior.zoom().scaleExtent([1, Infinity]).center([0,0]).on("zoom", function () {
 
@@ -585,7 +585,7 @@ function addZoomDouble(svg,updateFunction){
 
                     //actualization of the translation vector (translate) within the x&y ranges frames
                     svg.translate[0] = Math.min(0, Math.max(e.translate[0],svg.width - e.scale*svg.scalex*svg.width ));
-                    svg.translate[1] = Math.min(0, Math.max(e.translate[1],svg.height - e.scale*svg.scaley*svg.heightNM - svg.margin.zero));
+                    svg.translate[1] = Math.min(0, Math.max(e.translate[1],svg.height - e.scale*svg.scaley*svg.heightData - svg.margin.zero));
 
 
                 }else{
@@ -620,7 +620,7 @@ function addZoomDouble(svg,updateFunction){
                     
                     var newMouse = oldMouse* yrel + Math.min(svg.margin.zero, Math.max(0,oldMouse - svg.heightOutput*svg.scale*lastScaley))*(1 - yrel);
                     svg.translate[1] = oldMouse - newMouse + svg.translate[1];
-                    svg.translate[1] = Math.min(0, Math.max(svg.translate[1],svg.height - e.scale*svg.scaley*svg.heightNM - svg.margin.zero));
+                    svg.translate[1] = Math.min(0, Math.max(svg.translate[1],svg.height - e.scale*svg.scaley*svg.heightData - svg.margin.zero));
 
                     //console.log("newmouse :" + newMouse + " oldMouse :" + oldMouse);
 
@@ -782,7 +782,7 @@ function addZoomDouble(svg,updateFunction){
 function redraw(div,svg){
 
     var divWidth = Math.max(1.1*svg.tableWidth + svg.margin.left + svg.margin.right + 1,parseInt(div.style("width"),10)),
-      divHeight = Math.max(svg.margin.bottom + svg.margin.top + svg.margin.zero + 1,window.innerHeight*0.8);
+      divHeight = Math.max(svg.margin.bottom + svg.margin.top + svg.margin.zero + 2,window.innerHeight*0.8);
     console.log("width " + divWidth );
 
     var oldsvgheight = svg.height;
@@ -794,8 +794,33 @@ function redraw(div,svg){
     svg.height = divHeight - svg.margin.bottom - svg.margin.top;
     div.select("table").style("max-height",(divHeight-50) + "px");
 
-    var ratioyNM = (svg.height - svg.margin.zero)/(oldsvgheight - svg.margin.zero);
-    var ratiox = svg.width/oldsvgwidth;
+    var oldheightoutput = svg.heightOutput;
+
+    /* a calculerrrr
+    var oldheightData = svg.heightData;
+    svg.heightData = svg.;
+*/
+    var margIncTransl = Math.max(-svg.margin.zero,Math.min(svg.translate[1] + (svg.scale*svg.scaley)*oldheightoutput,0));
+    var margInView = Math.max(-svg.margin.zero,Math.min((svg.translate[1]-oldsvgheight) + (svg.scale*svg.scaley)*oldheightoutput,0)) - margIncTransl;
+
+    console.log("marginview " + margInView);
+
+    var oldscaleytot = svg.scale*svg.scaley;
+    var oldscalextot = svg.scale*svg.scalex;
+
+    var scaleytot = svg.scale*svg.scaley*(svg.height + margInView)*oldheightData/
+      ( (oldsvgheight + margInView)*(svg.heightData));
+
+    var scalextot = svg.scale*svg.scalex;
+
+    svg.scale = Math.max(scalextot,scaleytot);
+    svg.scalex = scalextot/svg.scale;
+    svg.scaley = scaleytot/svg.scale;
+
+    svg.zoom.scale(svg.scale);
+
+    var ratiox = svg.width/oldsvgwidth*scalextot/oldscalextot;
+    var ratioy = svg.heightData/oldheightData*scaleytot/oldscaleytot ;
 
     svg.x.range([0, svg.width]);
 
@@ -804,21 +829,11 @@ function redraw(div,svg){
 
     svg.svg.attr("width",svg.width).attr("height",svg.height);
 
-    var oldheightoutput = svg.heightOutput;
-    svg.heightOutput = svg.heightOutput*ratioyNM;
-
-    svg.textOutput.attr("transform", "translate(" + (svg.width/2) + "," +
-      (svg.heightOutput/4) + ")");
-
-    svg.rectInput.attr("y",svg.heightOutput+svg.margin.zero)
-      .attr("width",svg.width)
-      .attr("height",svg.height-svg.heightOutput-svg.margin.zero);
-
-    svg.textInput.attr("transform", "translate(" + (svg.width/2) + "," +
-      ((svg.height - svg.heightOutput - svg.margin.zero) *0.75 + svg.heightOutput + svg.margin.zero) + ")");
+    svg.heightOutput = svg.heightOutput*svg.heightData/oldheightData;
 
 
-    svg.axisx.attr('transform', 'translate(' + [svg.margin.left, svg.heightOutput+svg.margin.top] +  ")");
+    svg.rectInput.attr("width",svg.width);
+
 
     svg.axisx.select(".rectAxis").attr("width",svg.width);
 
@@ -828,12 +843,12 @@ function redraw(div,svg){
 
     svg.frame.select(".rectOverlay").attr("height",svg.height);
 
-    svg.heightNM = svg.height - svg.margin.zero;
 
     //...
 
-    var margIncTransl = Math.max(-svg.margin.zero,Math.min(svg.translate[1] + oldheightoutput,0));
-    svg.translate[1] = (svg.translate[1] - margIncTransl) * ratioyNM + margIncTransl;
+
+    console.log("marincltransl " + margIncTransl);
+    svg.translate[1] = (svg.translate[1] - margIncTransl) * ratioy + margIncTransl;
     svg.translate[0] = svg.translate[0]*ratiox;
 
 
@@ -1231,4 +1246,4 @@ d3.select(window).on("keydown",function (){
 
 
 drawHisto1DStack("./data.json", "Graph");
-drawHisto1DStack("./data2.json", "Graph2");
+//drawHisto1DStack("./data2.json", "Graph2");
