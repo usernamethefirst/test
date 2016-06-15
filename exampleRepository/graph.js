@@ -781,7 +781,7 @@ function addZoomDouble(svg,updateFunction){
 function redraw(div,svg){
 
     var divWidth = Math.max(1.1*svg.tableWidth + svg.margin.left + svg.margin.right + 1,parseInt(div.style("width"),10)),
-      divHeight = Math.max(svg.margin.bottom + svg.margin.top + svg.margin.zero + 2,window.innerHeight*0.8);
+      divHeight = Math.max(svg.margin.bottom + svg.margin.top + svg.margin.zero + 1,window.innerHeight*0.8);
     console.log("width " + divWidth );
 
     var oldsvgheight = svg.height;
@@ -795,10 +795,6 @@ function redraw(div,svg){
 
     var oldheightoutput = svg.heightOutput;
 
-    /* a calculerrrr
-    var oldheightData = svg.heightData;
-    svg.heightData = svg.;
-*/
     
     var margIncTransl = Math.max(-svg.margin.zero,Math.min(svg.translate[1] + (svg.scale*svg.scaley)*oldheightoutput,0));
     var margInView = Math.max(-svg.margin.zero,Math.min((svg.translate[1]-oldsvgheight) + (svg.scale*svg.scaley)*oldheightoutput,0)) - margIncTransl;
@@ -834,15 +830,12 @@ function redraw(div,svg){
     svg.frame.select(".rectOverlay").attr("height",svg.height);
 
 
-    //...
-
 
     console.log("marincltransl " + margIncTransl);
     svg.translate[1] = (svg.translate[1] - margIncTransl) * (svg.height + margInView)/(oldsvgheight + margInView) + margIncTransl;
     svg.translate[0] = svg.translate[0]*ratiox;
 
     var oldscaleytot = svg.scale*svg.scaley;
-    var oldscalextot = svg.scale*svg.scalex;
 
     var scaleytot = oldscaleytot * (svg.height + margInView) * oldheightData / (svg.heightData * (oldsvgheight + margInView)) ;
  
@@ -1160,26 +1153,39 @@ function colorEval(){
 
 
 
-function colorEval(){
+function colorEval(firstValue){
+
+
 
     var calcexpmin;
+    var added;
     var idecal;
-    var val = 0;
+    var val = typeof firstValue !== "undefined" ? firstValue%360 : 0;
     var exp;
     var i = 0;
 
 
     var color;
 
+    /* à voir pour répartition non homogène autour cercle hsl
+
+    var coef = 3 * 20 / Math.PI;
+
+
+    function disp(x){
+        return x + coef * Math.sin(x * Math.PI/60);
+    }
+    */
     var y = 5;
-    var z = 3;
+    var z =5;
 
-    var start = 0.4;
-    var segm = (0.8 - start)/6;
+    var starty = 0.5;
+    var startz = 0.4;
+    var segmy = (1 - starty)/6;
+    var segmz = (0.8 - startz)/10;
 
-
-    var s = start + segm*y;
-    var l = start + segm*z;
+    var s = starty + segmy*y;
+    var l = startz + segmz*z;
 
 
     return function(){
@@ -1195,15 +1201,15 @@ function colorEval(){
         while(idecal == Math.floor(idecal) && calcexpmin > 0);
 
         console.log("i " + i + "  exp " + exp + " idecal "+ idecal + " calcexpmin " + calcexpmin);
-
-        val =(val + Math.pow(2,calcexpmin)*180/Math.pow(2,exp))%360;
+        added = (calcexpmin -exp) < -1 ? (Math.pow(2,calcexpmin -exp) + 1)*180 :Math.pow(2,calcexpmin -exp)*180;
+        val =(val + added)%360;
         console.log("val " + val);
 
 
         y = (y+4)%7;
-        z = (z+4)%7;
-        s = y*segm +start;
-        l= z*segm +start;
+        z = (z+7)%11;
+        s = y*segmy +starty;
+        l= z*segmz +startz;
 
 
 
@@ -1250,4 +1256,4 @@ d3.select(window).on("keydown",function (){
 
 
 drawHisto1DStack("./data.json", "Graph");
-//drawHisto1DStack("./data2.json", "Graph2");
+drawHisto1DStack("./data2.json", "Graph2");
