@@ -1193,15 +1193,15 @@ function colorEval(firstValue){
         color = d3.hsl(val,s,l);
         exp = Math.floor(Math.log(i)/Math.log(2));
         idecal = i - Math.pow(2,exp);
-        calcexpmin = exp + 1;
+        calcexpmin =  1;
         do{
             idecal = idecal / 2;
             calcexpmin --;
         }
-        while(idecal == Math.floor(idecal) && calcexpmin > 0);
+        while(idecal == Math.floor(idecal) && calcexpmin > -exp);
 
         console.log("i " + i + "  exp " + exp + " idecal "+ idecal + " calcexpmin " + calcexpmin);
-        added = (calcexpmin -exp) < -1 ? (Math.pow(2,calcexpmin -exp) + 1)*180 :Math.pow(2,calcexpmin -exp)*180;
+        added = calcexpmin < -1 ? (Math.pow(2,calcexpmin) + 1)*180 :Math.pow(2,calcexpmin)*180;
         val =(val + added)%360;
         console.log("val " + val);
 
