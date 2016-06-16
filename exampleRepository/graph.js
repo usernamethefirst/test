@@ -1201,7 +1201,7 @@ function colorEval(firstValue){
         while(idecal == Math.floor(idecal) && calcexpmin > -exp);
 
         console.log("i " + i + "  exp " + exp + " idecal "+ idecal + " calcexpmin " + calcexpmin);
-        added = calcexpmin < -1 ? (Math.pow(2,calcexpmin) + 1/2)*180 :Math.pow(2,calcexpmin)*180;
+        added = calcexpmin < -1 ? (Math.pow(2,calcexpmin) + 0.5)*180 :Math.pow(2,calcexpmin)*180;
         val =(val + added)%360;
         console.log("val " + val);
 
